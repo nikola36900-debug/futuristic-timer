@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHRONO://CORE — Task Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="bgLayer" aria-hidden="true"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<main class="hud" id="hud" aria-label="Futuristic task timer">
+  <span class="corner c-tr" aria-hidden="true"></span>
+  <span class="corner c-bl" aria-hidden="true"></span>
+
+  <div class="statline">
+    <span><span class="sys-dot"></span>SYS.ONLINE</span>
+    <b>CHRONO://CORE</b>
+    <span class="right">
+      <button class="icon-btn" id="focusBtn" title="Focus mode — hide panels (F)">◈ FOCUS</button>
+      <button class="icon-btn" id="fsBtn" title="Fullscreen">⛶</button>
+      <span id="clock">--:--</span>
+    </span>
+  </div>
+
+  <div class="layout">
+    <div class="col col-left">
+  <div class="task-row">
+    <div class="task-label">MISSION DESIGNATION</div>
+    <input class="task-name" id="taskName" type="text" maxlength="28"
+           placeholder="NAME THIS SESSION…" value="STUDY SESSION" aria-label="Task name">
+    <div class="task-chips" id="taskChips">
+      <button class="tchip active" data-task="STUDY SESSION">STUDY</button>
+      <button class="tchip" data-task="DEEP WORK">WORK</button>
+      <button class="tchip" data-task="WORKOUT">WORKOUT</button>
+      <button class="tchip" data-task="BREAK">BREAK</button>
+      <button class="tchip" data-task="MEDITATION">MEDITATE</button>
+    </div>
+  </div>
+
+  <div class="setter" id="setter">
+    <div class="unit">
+      <button data-adj="h+1" aria-label="Add one hour">+</button>
+      <div class="u-label">HRS</div>
+      <button data-adj="h-1" aria-label="Subtract one hour">−</button>
+    </div>
+    <div class="unit">
+      <button data-adj="m+1" aria-label="Add one minute">+</button>
+      <div class="u-label">MIN</div>
+      <button data-adj="m-1" aria-label="Subtract one minute">−</button>
+    </div>
+    <div class="unit">
+      <button data-adj="s+10" aria-label="Add ten seconds">+</button>
+      <div class="u-label">SEC</div>
+      <button data-adj="s-10" aria-label="Subtract ten seconds">−</button>
+    </div>
+  </div>
+
+  <div class="presets" id="presets">
+    <button class="chip" data-min="5">5:00</button>
+    <button class="chip" data-min="15">15:00</button>
+    <button class="chip" data-min="25">25:00</button>
+    <button class="chip" data-min="50">50:00</button>
+  </div>
+
+  <div class="options" id="options">
+    <button class="toggle" id="tgPomodoro" role="switch" aria-checked="false" title="After focus, auto-run a break, then repeat">
+      <span class="led"></span>POMODORO
+    </button>
+    <button class="toggle" id="tgLoop" role="switch" aria-checked="false" title="Auto-restart this timer when it ends">
+      <span class="led"></span>LOOP
+    </button>
+    <button class="toggle" id="tgNotify" role="switch" aria-checked="false" title="Show a desktop notification when done">
+      <span class="led"></span>NOTIFY
+    </button>
+  </div>
+
+  <div class="alarmbar">
+    <span class="lab">ALARM</span>
+    <button class="mute" id="muteBtn" aria-label="Mute alarm" title="Mute / unmute">🔊</button>
+    <input class="vol" id="vol" type="range" min="0" max="100" value="80" aria-label="Alarm volume">
+    <button class="test-btn" id="testBtn">TEST</button>
+  </div>
+
+  <div class="bgbar">
+    <span class="lab">BACKDROP</span>
+    <button class="bg-btn" id="bgMediaBtn" title="Set an image or video as background">IMG / VIDEO</button>
+    <button class="bg-btn" id="bgAudioBtn" title="Ambient background audio (loops)">AMBIENT ♫</button>
+    <button class="bg-btn hidden" id="bgAudioPlay" title="Play / pause ambient audio">▶</button>
+    <div class="sliderwrap">
+      <span class="sl">LOW</span>
+      <input class="vol" id="bgOpacity" type="range" min="5" max="100" value="50" aria-label="Background visibility">
+      <span class="sl">HIGH</span>
+    </div>
+    <button class="bg-btn danger" id="bgClear" title="Remove backdrop and ambient audio">CLEAR</button>
+  </div>
+
+  <input type="file" id="bgMediaFile" accept="image/*,video/mp4,video/webm,video/ogg" class="hidden">
+  <input type="file" id="bgAudioFile" accept="audio/*" class="hidden">
+  <audio id="ambientAudio" loop></audio>
+    </div>
+
+    <div class="col col-center">
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tab-timer" role="tab" aria-selected="true">TIMER</button>
+    <button class="tab" id="tab-watch" role="tab" aria-selected="false">STOPWATCH</button>
+  </div>
+
+  <div class="core">
+    <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+      <defs>
+        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:var(--neon)"/>
+          <stop offset="100%" style="stop-color:color-mix(in srgb, var(--neon) 45%, white)"/>
+        </linearGradient>
+      </defs>
+      <g class="ticks" id="ticks" transform="rotate(90 100 100)"></g>
+      <circle class="track" cx="100" cy="100" r="88"/>
+      <circle class="arc" id="arc" cx="100" cy="100" r="88" stroke="url(#ringGrad)"/>
+      <circle class="orbiter" id="orbiter" r="4" cx="188" cy="100"/>
+    </svg>
+    <div class="core-center">
+      <div class="core-task" id="coreTask">STUDY SESSION</div>
+      <div class="time" id="time">05<span class="sep">:</span>00</div>
+      <div class="core-state" id="coreState">STANDBY</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="startBtn">INITIATE</button>
+    <button class="btn hidden" id="lapBtn">MARK LAP</button>
+    <button class="btn dismiss hidden" id="dismissBtn">DISMISS ALARM</button>
+    <button class="btn" id="resetBtn">RESET</button>
+  </div>
+
+  <audio id="alarmAudio" src="ALARM.mp3" preload="auto" loop></audio>
+
+  <div class="foot">
+    <div class="themebar" aria-label="Theme color">
+      <button class="icon-btn" id="themeToggle" title="Show / hide theme color options" aria-expanded="true">🎨 THEME</button>
+      <span class="theme-controls" id="themeControls">
+        <div class="swatches" role="group" aria-label="Preset colors">
+          <button class="swatch active" style="background:#22d8ff;color:#22d8ff" data-led="#22d8ff" aria-label="Cyan"></button>
+          <button class="swatch" style="background:#a86bff;color:#a86bff" data-led="#a86bff" aria-label="Violet"></button>
+          <button class="swatch" style="background:#3dff9e;color:#3dff9e" data-led="#3dff9e" aria-label="Green"></button>
+          <button class="swatch" style="background:#ff9d3d;color:#ff9d3d" data-led="#ff9d3d" aria-label="Orange"></button>
+        </div>
+        <input type="range" class="hue" id="hueBar" min="0" max="360" value="192" aria-label="Theme hue">
+        <input type="color" class="pick" id="colorPick" value="#22d8ff" aria-label="Pick exact theme color" title="Pick any exact color">
+      </span>
+    </div>
+    <div class="hints">
+      <span class="kb-only"><kbd>SPACE</kbd> RUN · <kbd>R</kbd> RESET · <kbd>ESC</kbd> DISMISS · <kbd>F</kbd> FOCUS · </span><kbd>1–4</kbd> COLOR
+    </div>
+  </div>
+    </div>
+
+    <div class="col col-right">
+  <div class="log-head">
+    <div class="log-title">MISSION LOG <small id="logCount">0 RUNS</small></div>
+    <div class="log-actions">
+      <button class="log-btn" id="toggleLog" aria-expanded="true">HIDE</button>
+      <button class="log-btn danger" id="clearLog">CLEAR</button>
+    </div>
+  </div>
+
+  <div id="logBody">
+    <div class="log-stats">
+      <div class="stat"><div class="v" id="statRuns">0</div><div class="k">COMPLETED</div></div>
+      <div class="stat"><div class="v" id="statTime">0m</div><div class="k">TOTAL FOCUS</div></div>
+      <div class="stat"><div class="v" id="statTop">—</div><div class="k">TOP MISSION</div></div>
+    </div>
+    <div class="log-list" id="logList"></div>
+  </div>
+
+  <div class="laps" id="laps" aria-label="Lap times"></div>
+    </div>
+  </div>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
